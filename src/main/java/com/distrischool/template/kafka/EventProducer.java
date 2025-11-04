@@ -12,12 +12,15 @@ import java.util.concurrent.CompletableFuture;
  * Producer Kafka para publicar eventos do DistriSchool.
  * Use este padrão para enviar mensagens para outros microserviços.
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class EventProducer {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EventProducer.class);
     private final KafkaTemplate<String, DistriSchoolEvent> kafkaTemplate;
+
+    public EventProducer(KafkaTemplate<String, DistriSchoolEvent> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     /**
      * Envia um evento para um tópico específico

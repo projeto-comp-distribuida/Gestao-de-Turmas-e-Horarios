@@ -11,9 +11,10 @@ import org.springframework.stereotype.Component;
  * Consumer Kafka para receber eventos de outros microsserviços do DistriSchool.
  * Use este padrão para processar mensagens recebidas.
  */
-@Slf4j
 @Component
 public class EventConsumer {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EventConsumer.class);
 
     /**
      * Consumer genérico para eventos do DistriSchool.

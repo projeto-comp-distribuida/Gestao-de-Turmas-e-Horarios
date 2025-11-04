@@ -15,10 +15,11 @@ import java.util.Map;
  * Este controller serve como exemplo de como implementar endpoints REST
  * seguindo os padrões do sistema de gestão escolar.
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/health")
 public class HealthController {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(HealthController.class);
 
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHealth() {
