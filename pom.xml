@@ -13,10 +13,10 @@
     </parent>
     
     <groupId>com.distrischool</groupId>
-    <artifactId>microservice-template</artifactId>
+    <artifactId>schedule-management-service</artifactId>
     <version>1.0.0</version>
-    <name>DistriSchool Microservice Template</name>
-    <description>Template base para microsserviços do DistriSchool - Sistema de Gestão Escolar</description>
+    <name>DistriSchool Schedule Management Service</name>
+    <description>Microserviço de Gestão de Turmas e Horários para DistriSchool</description>
     
     <properties>
         <java.version>17</java.version>
@@ -72,6 +72,24 @@
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+        </dependency>
+        
+        <!-- Spring WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        
+        <!-- Apache POI para importação Excel -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
         </dependency>
         
         <!-- Spring Cloud OpenFeign para comunicação entre serviços -->
@@ -130,6 +148,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- H2 Database para testes -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
         

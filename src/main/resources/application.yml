@@ -1,6 +1,6 @@
 spring:
   application:
-    name: microservice-template
+    name: schedule-management-service
   
   # Configuração do DataSource (PostgreSQL)
   datasource:
@@ -151,3 +151,4 @@ microservice:
       # Exemplos: student.created, teacher.assigned, schedule.updated, etc.
       example-event: distrischool.example.event
       example-command: distrischool.example.command
+      schedule-updated: distrischool.schedule.updated
