@@ -126,6 +126,15 @@ services:
       SERVER_PORT: 8080
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_PROFILES_ACTIVE: dev
+      MICROSERVICE_AUTH_URL: http://microservice-auth-dev:8080
+      SECURITY_DISABLE: "${SECURITY_DISABLE:-false}"
+      AUTH0_DOMAIN: "${AUTH0_DOMAIN:-dev-example.us.auth0.com}"
+      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE:-https://distrischool.api}"
+      AUTH0_ISSUER_URI: "${AUTH0_ISSUER_URI:-https://dev-example.us.auth0.com/}"
+      AUTH0_CLIENT_ID: "${AUTH0_CLIENT_ID:-local-dev}"
+      AUTH0_CLIENT_SECRET: "${AUTH0_CLIENT_SECRET:-local-dev-secret}"
+      AUTH0_CONNECTION: "${AUTH0_CONNECTION:-Username-Password-Authentication}"
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "${AUTH0_ISSUER_URI:-https://dev-example.us.auth0.com/}"
       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
       SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
       SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
@@ -154,6 +163,80 @@ services:
       - distrischool-network
     # Remove o healthcheck para facilitar o desenvolvimento
     # O Spring Boot DevTools pode reiniciar frequentemente
+
+  # Microserviço de Gestão de Alunos - imagem publicada no Azure Container Registry (ACR)
+  student-management-service:
+    image: distrischooldevacr.azurecr.io/microservice-student-management-service:latest
+    container_name: student-management-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_template
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      MICROSERVICE_AUTH_URL: http://microservice-auth-dev:8080
+      AUTH0_ENABLED: "${AUTH0_ENABLED:-false}"
+      AUTH0_DOMAIN: "${AUTH0_DOMAIN:-dev-example.us.auth0.com}"
+      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE:-https://distrischool.api}"
+      AUTH0_CLIENT_ID: "${AUTH0_CLIENT_ID:-local-dev}"
+      AUTH0_CLIENT_SECRET: "${AUTH0_CLIENT_SECRET:-local-dev-secret}"
+      AUTH0_CONNECTION: "${AUTH0_CONNECTION:-Username-Password-Authentication}"
+    networks:
+      - distrischool-network
+
+  # Microserviço de Gestão de Professores - imagem publicada no Azure Container Registry (ACR)
+  teacher-management-service:
+    image: distrischooldevacr.azurecr.io/microservice-teacher-management-service:latest
+    container_name: teacher-management-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_template
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      MICROSERVICE_AUTH_URL: http://microservice-auth-dev:8080
+      AUTH0_ENABLED: "${AUTH0_ENABLED:-false}"
+      AUTH0_DOMAIN: "${AUTH0_DOMAIN:-dev-example.us.auth0.com}"
+      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE:-https://distrischool.api}"
+      AUTH0_CLIENT_ID: "${AUTH0_CLIENT_ID:-local-dev}"
+      AUTH0_CLIENT_SECRET: "${AUTH0_CLIENT_SECRET:-local-dev-secret}"
+      AUTH0_CONNECTION: "${AUTH0_CONNECTION:-Username-Password-Authentication}"
+    networks:
+      - distrischool-network
 
 networks:
   distrischool-network:
