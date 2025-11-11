@@ -145,6 +145,8 @@ logging:
 microservice:
   name: ${spring.application.name}
   version: 1.0.0
+  auth:
+    url: ${AUTH_SERVICE_URL:http://auth-service-dev:8080}
   kafka:
     topics:
       # Defina seus tópicos aqui conforme os requisitos do DistriSchool
@@ -152,3 +154,20 @@ microservice:
       example-event: distrischool.example.event
       example-command: distrischool.example.command
       schedule-updated: distrischool.schedule.updated
+
+# Configurações de segurança OAuth2
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI:${AUTH0_DOMAIN:https://your-tenant.auth0.com/}}
+
+# Configurações Auth0
+auth0:
+  audience: ${AUTH0_AUDIENCE:}
+  domain: ${AUTH0_DOMAIN:}
+
+# Configurações de segurança
+security:
+  disable: ${SECURITY_DISABLE:false}

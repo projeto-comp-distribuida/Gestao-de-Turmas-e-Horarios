@@ -7,6 +7,7 @@ import com.distrischool.schedule.websocket.ScheduleWebSocketController;
 import com.distrischool.schedule.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,6 +28,7 @@ public class ScheduleController {
     private final ScheduleWebSocketController websocketController;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Schedule>> create(@RequestBody Schedule schedule) {
         Schedule created = scheduleService.create(schedule);
         
@@ -40,6 +42,7 @@ public class ScheduleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Schedule>> update(@PathVariable Long id, @RequestBody Schedule schedule) {
         Schedule updated = scheduleService.update(id, schedule);
         
@@ -53,6 +56,7 @@ public class ScheduleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         scheduleService.delete(id);
         
