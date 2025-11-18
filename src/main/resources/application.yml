@@ -149,9 +149,9 @@ microservice:
   auth:
     url: ${AUTH_SERVICE_URL:http://auth-service-dev:8080}
   student:
-    url: ${STUDENT_SERVICE_URL:http://gestao-de-alunos-dev:8080}
+    url: ${STUDENT_SERVICE_URL:http://student-management-service-dev:8080}
   teacher:
-    url: ${TEACHER_SERVICE_URL:http://gestao-de-professores-dev:8080}
+    url: ${TEACHER_SERVICE_URL:http://teacher-management-service-dev:8080}
   kafka:
     topics:
       # Defina seus tópicos aqui conforme os requisitos do DistriSchool

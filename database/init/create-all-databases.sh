@@ -28,3 +28,4 @@ done
 echo "All databases are ready!"
 
 
+

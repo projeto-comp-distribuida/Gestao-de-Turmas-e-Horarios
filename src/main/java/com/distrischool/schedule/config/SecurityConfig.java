@@ -169,7 +169,7 @@ public class SecurityConfig {
 
         Converter<Jwt, Collection<GrantedAuthority>> aggregateConverter = jwt -> {
             Collection<GrantedAuthority> authorities = new ArrayList<>(scopesConverter.convert(jwt));
-
+            
             Object permissionsClaim = jwt.getClaims().get("permissions");
             if (permissionsClaim instanceof Collection<?> perms) {
                 for (Object p : perms) {

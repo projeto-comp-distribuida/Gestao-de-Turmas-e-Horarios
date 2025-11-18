@@ -134,3 +134,4 @@ Para habilitar essas rotas no API Gateway, é necessário:
 4. Reiniciar o container do Gateway
 
 
+

@@ -15,7 +15,7 @@ import java.util.Map;
  */
 @FeignClient(
     name = "teacher-service",
-    url = "${microservice.teacher.url:http://gestao-de-professores-dev:8080}"
+    url = "${microservice.teacher.url:http://teacher-management-service-dev:8080}"
 )
 public interface TeacherServiceClient {
 
@@ -31,6 +31,7 @@ public interface TeacherServiceClient {
     @PostMapping("/api/v1/teachers/batch")
     ApiResponse<List<Map<String, Object>>> getTeachersByIds(@RequestBody List<Long> teacherIds);
 }
+
 
 
 
