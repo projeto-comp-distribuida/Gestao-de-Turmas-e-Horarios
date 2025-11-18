@@ -1,6 +1,5 @@
 package com.distrischool.schedule.kafka;
 
-import com.distrischool.schedule.kafka.DistriSchoolEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;

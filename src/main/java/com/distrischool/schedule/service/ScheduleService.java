@@ -1,8 +1,11 @@
 package com.distrischool.schedule.service;
 
 import com.distrischool.schedule.entity.Schedule;
+import com.distrischool.schedule.exception.ResourceNotFoundException;
 import com.distrischool.schedule.kafka.ScheduleEventProducer;
+import com.distrischool.schedule.repository.ClassRepository;
 import com.distrischool.schedule.repository.ScheduleRepository;
+import com.distrischool.schedule.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +21,29 @@ public class ScheduleService {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ScheduleService.class);
     private final ScheduleRepository scheduleRepository;
+    private final ClassRepository classRepository;
+    private final SubjectRepository subjectRepository;
     private final ScheduleConflictService conflictService;
     private final ScheduleEventProducer eventProducer;
 
     @Transactional
     public Schedule create(Schedule schedule) {
+        log.info("Criando schedule para turma: {}", schedule.getClassEntity() != null ? schedule.getClassEntity().getId() : "null");
+        
+        // Validar que a turma existe
+        if (schedule.getClassEntity() == null || schedule.getClassEntity().getId() == null) {
+            throw new IllegalArgumentException("Turma (class) é obrigatória para criar um schedule");
+        }
+        classRepository.findById(schedule.getClassEntity().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Turma", schedule.getClassEntity().getId()));
+        
+        // Validar que a disciplina existe
+        if (schedule.getSubject() == null || schedule.getSubject().getId() == null) {
+            throw new IllegalArgumentException("Disciplina (subject) é obrigatória para criar um schedule");
+        }
+        subjectRepository.findById(schedule.getSubject().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Disciplina", schedule.getSubject().getId()));
+        
         // Verificar conflitos
         List<Schedule> conflicts = conflictService.detectConflicts(schedule);
         if (!conflicts.isEmpty()) {
@@ -46,7 +67,21 @@ public class ScheduleService {
     @Transactional
     public Schedule update(Long id, Schedule schedule) {
         Schedule existing = scheduleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Schedule não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", id));
+
+        // Validar que a turma existe (se fornecida)
+        if (schedule.getClassEntity() != null && schedule.getClassEntity().getId() != null) {
+            classRepository.findById(schedule.getClassEntity().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Turma", schedule.getClassEntity().getId()));
+            existing.setClassEntity(schedule.getClassEntity());
+        }
+        
+        // Validar que a disciplina existe (se fornecida)
+        if (schedule.getSubject() != null && schedule.getSubject().getId() != null) {
+            subjectRepository.findById(schedule.getSubject().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Disciplina", schedule.getSubject().getId()));
+            existing.setSubject(schedule.getSubject());
+        }
 
         existing.setDayOfWeek(schedule.getDayOfWeek());
         existing.setStartTime(schedule.getStartTime());
@@ -92,7 +127,7 @@ public class ScheduleService {
 
     public Schedule findById(Long id) {
         return scheduleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Schedule não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", id));
     }
 
     public List<Schedule> findAll() {

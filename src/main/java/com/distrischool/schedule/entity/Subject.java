@@ -9,14 +9,15 @@ import lombok.*;
 @Entity
 @Table(name = "subjects", indexes = {
     @Index(name = "idx_subject_code", columnList = "code"),
-    @Index(name = "idx_subject_school", columnList = "school_id")
+    @Index(name = "idx_subject_school", columnList = "school_id"),
+    @Index(name = "idx_subject_academic_center", columnList = "academic_center_id")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true, exclude = {"school"})
-@ToString(callSuper = true, exclude = {"school"})
+@EqualsAndHashCode(callSuper = true, exclude = {"school", "academicCenter"})
+@ToString(callSuper = true, exclude = {"school", "academicCenter"})
 public class Subject extends BaseEntity {
 
     @Id
@@ -38,6 +39,10 @@ public class Subject extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "school_id")
     private School school;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_center_id")
+    private AcademicCenter academicCenter;
 
     @Column(nullable = false)
     @Builder.Default

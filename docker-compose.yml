@@ -90,18 +90,35 @@ services:
       timeout: 10s
       retries: 5
 
-  # Kafka UI (Opcional - Para visualizar tópicos e mensagens)
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+  # Spring Cloud Gateway - API Gateway Service
+  api-gateway-dev:
+    image: distrischooldevacr.azurecr.io/api-gateway:latest
+    container_name: api-gateway-dev
     depends_on:
-      - kafka
+      redis:
+        condition: service_healthy
+      microservice-auth-dev:
+        condition: service_started
+      student-management-service-dev:
+        condition: service_started
+      teacher-management-service-dev:
+        condition: service_started
+      schedule-management-service-dev:
+        condition: service_started
     ports:
-      - "8090:8080"
+      - "8080:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      # Redis para Rate Limiter
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Service URLs for Gateway routing
+      SCHEDULE_SERVICE_URL: http://schedule-management-service-dev:8080
+      AUTH_SERVICE_URL: http://microservice-auth-dev:8080
+      STUDENT_SERVICE_URL: http://student-management-service-dev:8080
+      TEACHER_SERVICE_URL: http://teacher-management-service-dev:8080
     networks:
       - distrischool-network
 
@@ -119,8 +136,6 @@ services:
       - "8084:8080"
       - "5008:5005"   # Porta para debug remoto
       - "35732:35729" # Porta para LiveReload
-    extra_hosts:
-      - "postgres:172.23.0.2"
     environment:
       SERVER_PORT: 8080
       # Kafka compartilhado
@@ -143,6 +158,11 @@ services:
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      # Configurações de Segurança
+      SECURITY_DISABLE: ${SECURITY_DISABLE:-false}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_ISSUER_URI: ${AUTH0_ISSUER_URI:-}
     volumes:
       # Monta o código fonte para hot reloading
       - ./src:/app/src:rw
@@ -152,15 +172,147 @@ services:
       - maven-cache:/root/.m2
     networks:
       - distrischool-network
-      - gestao-de-notas_distrischool-network
     # Remove o healthcheck para facilitar o desenvolvimento
     # O Spring Boot DevTools pode reiniciar frequentemente
+
+  # Microserviço Auth - usando imagem do Azure Container Registry (ACR)
+  microservice-auth-dev:
+    image: distrischooldevacr.azurecr.io/microservice-auth:latest
+    container_name: microservice-auth-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8080"
+      - "5009:5005"   # Debug remoto
+      - "35733:35729" # LiveReload
+    environment:
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_auth
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      # Configurações Auth0
+      AUTH0_ENABLED: ${AUTH0_ENABLED:-true}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_CONNECTION: ${AUTH0_CONNECTION:-Username-Password-Authentication}
+      # Configurações JWT
+      JWT_SECRET: ${JWT_SECRET:-default-secret-key-change-in-production-minimum-256-bits}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      # Configurações CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+    networks:
+      - distrischool-network
+
+  # Microserviço Student Management - usando imagem do Azure Container Registry (ACR)
+  student-management-service-dev:
+    image: distrischooldevacr.azurecr.io/microservice-student-management-service:latest
+    container_name: student-management-service-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8086:8080"
+      - "5010:5005"   # Debug remoto
+      - "35734:35729" # LiveReload
+    environment:
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SECURITY_DISABLE: "false"
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_students
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+    networks:
+      - distrischool-network
+
+  # Microserviço Teacher Management - usando imagem do Azure Container Registry (ACR)
+  teacher-management-service-dev:
+    image: distrischooldevacr.azurecr.io/microservice-teacher-management-service:latest
+    container_name: teacher-management-service-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8087:8080"
+      - "5011:5005"   # Debug remoto
+      - "35735:35729" # LiveReload
+    environment:
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SECURITY_DISABLE: "false"
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_teachers
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+    networks:
+      - distrischool-network
 
 networks:
   distrischool-network:
     driver: bridge
-  gestao-de-notas_distrischool-network:
-    external: true
 
 volumes:
   maven-cache:

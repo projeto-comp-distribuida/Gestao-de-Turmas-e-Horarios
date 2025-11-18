@@ -148,6 +148,10 @@ microservice:
   version: 1.0.0
   auth:
     url: ${AUTH_SERVICE_URL:http://auth-service-dev:8080}
+  student:
+    url: ${STUDENT_SERVICE_URL:http://gestao-de-alunos-dev:8080}
+  teacher:
+    url: ${TEACHER_SERVICE_URL:http://gestao-de-professores-dev:8080}
   kafka:
     topics:
       # Defina seus tópicos aqui conforme os requisitos do DistriSchool
@@ -155,6 +159,10 @@ microservice:
       example-event: distrischool.example.event
       example-command: distrischool.example.command
       schedule-updated: distrischool.schedule.updated
+      class-created: distrischool.class.created
+      class-updated: distrischool.class.updated
+      student-enrolled: distrischool.student.enrolled
+      attendance-recorded: distrischool.attendance.recorded
 
   # Configurações de segurança OAuth2
   security:

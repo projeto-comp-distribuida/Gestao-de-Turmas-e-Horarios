@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -17,14 +15,15 @@ import java.util.Set;
     @Index(name = "idx_class_code", columnList = "code"),
     @Index(name = "idx_class_school", columnList = "school_id"),
     @Index(name = "idx_class_shift", columnList = "shift_id"),
-    @Index(name = "idx_class_academic_year", columnList = "academic_year")
+    @Index(name = "idx_class_academic_year", columnList = "academic_year"),
+    @Index(name = "idx_class_room", columnList = "room")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true, exclude = {"school", "shift", "schedules"})
-@ToString(callSuper = true, exclude = {"school", "shift", "schedules"})
+@EqualsAndHashCode(callSuper = true, exclude = {"school", "shift", "schedules", "students", "teachers"})
+@ToString(callSuper = true, exclude = {"school", "shift", "schedules", "students", "teachers"})
 public class Class extends BaseEntity {
 
     @Id
@@ -64,15 +63,20 @@ public class Class extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "student_ids", columnDefinition = "TEXT")
-    private String studentIds; // JSON array de IDs de alunos
-
-    @Column(name = "teacher_ids", columnDefinition = "TEXT")
-    private String teacherIds; // JSON array de IDs de professores
+    @Column(length = 100)
+    private String room;
 
     @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Schedule> schedules = new HashSet<>();
+
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ClassStudent> students = new HashSet<>();
+
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ClassTeacher> teachers = new HashSet<>();
 
     @Column(nullable = false)
     @Builder.Default
