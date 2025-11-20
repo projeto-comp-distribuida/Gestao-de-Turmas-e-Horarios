@@ -6,7 +6,6 @@ on:
     tags: [ 'v*' ]
 
 env:
-  # Azure Container Registry Configuration
   ACR_NAME: distrischooldevacr
   ACR_LOGIN_SERVER: distrischooldevacr.azurecr.io
   IMAGE_NAME: microservice-class-management-service

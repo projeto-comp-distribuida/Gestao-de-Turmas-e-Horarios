@@ -75,6 +75,19 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI:https://${AUTH0_DOMAIN:your-tenant.auth0.com}/}
+
+  web:
+    cors:
+      allowed-origins: ${SPRING_WEB_CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:3000,http://localhost:5173}
+      allowed-methods: ${SPRING_WEB_CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH}
+      allowed-headers: ${SPRING_WEB_CORS_ALLOWED_HEADERS:*}
+      allow-credentials: ${SPRING_WEB_CORS_ALLOW_CREDENTIALS:true}
+
   # Configurações do Spring Boot DevTools para Hot Reload
   devtools:
     restart:

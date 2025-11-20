@@ -148,6 +148,15 @@ services:
       # Kafka compartilhado
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_PROFILES_ACTIVE: dev
+      MICROSERVICE_AUTH_URL: http://microservice-auth-dev:8080
+      SECURITY_DISABLE: "${SECURITY_DISABLE:-false}"
+      AUTH0_DOMAIN: "${AUTH0_DOMAIN:-dev-example.us.auth0.com}"
+      AUTH0_AUDIENCE: "${AUTH0_AUDIENCE:-https://distrischool.api}"
+      AUTH0_ISSUER_URI: "${AUTH0_ISSUER_URI:-https://dev-example.us.auth0.com/}"
+      AUTH0_CLIENT_ID: "${AUTH0_CLIENT_ID:-local-dev}"
+      AUTH0_CLIENT_SECRET: "${AUTH0_CLIENT_SECRET:-local-dev-secret}"
+      AUTH0_CONNECTION: "${AUTH0_CONNECTION:-Username-Password-Authentication}"
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "${AUTH0_ISSUER_URI:-https://dev-example.us.auth0.com/}"
       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
       SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
       SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
