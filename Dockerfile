@@ -46,8 +46,9 @@ FROM eclipse-temurin:17-jdk-alpine AS release
 LABEL maintainer="DistriSchool Team"
 WORKDIR /app
 
-# Copia o JAR construído
-COPY --from=build /app/target/microservice-template-1.0.0.jar /app/app.jar
+# Copia o JAR construído (usa o artifactId real do serviço)
+ARG JAR_NAME=schedule-management-service-1.0.0.jar
+COPY --from=build /app/target/${JAR_NAME} /app/app.jar
 
 # Cria usuário não-root para segurança
 RUN addgroup --system app && adduser -S -s /bin/false -G app app
