@@ -8,7 +8,7 @@ on:
 env:
   ACR_NAME: distrischooldevacr
   ACR_LOGIN_SERVER: distrischooldevacr.azurecr.io
-  IMAGE_NAME: class-management-service
+  IMAGE_NAME: microservice-class-management-service
   REGISTRY: distrischooldevacr.azurecr.io
 
 jobs:

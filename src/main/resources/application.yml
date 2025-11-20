@@ -1,17 +1,18 @@
 spring:
   application:
-    name: microservice-template
+    name: schedule-management-service
   
   # Configuração do DataSource (PostgreSQL)
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/distrischool_template}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/distrischool_schedules}
     username: ${SPRING_DATASOURCE_USERNAME:distrischool}
     password: ${SPRING_DATASOURCE_PASSWORD:distrischool123}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
-      connection-timeout: 30000
+      connection-timeout: 60000
+      initialization-fail-timeout: -1
       idle-timeout: 600000
       max-lifetime: 1800000
       leak-detection-threshold: 60000
@@ -159,16 +160,35 @@ microservice:
   name: ${spring.application.name}
   version: 1.0.0
   auth:
-    url: ${MICROSERVICE_AUTH_URL:http://microservice-auth-dev:8080}
+    url: ${AUTH_SERVICE_URL:http://auth-service-dev:8080}
+  student:
+    url: ${STUDENT_SERVICE_URL:http://student-management-service-dev:8080}
+  teacher:
+    url: ${TEACHER_SERVICE_URL:http://teacher-management-service-dev:8080}
   kafka:
     topics:
       # Defina seus tópicos aqui conforme os requisitos do DistriSchool
       # Exemplos: student.created, teacher.assigned, schedule.updated, etc.
       example-event: distrischool.example.event
       example-command: distrischool.example.command
+      schedule-updated: distrischool.schedule.updated
+      class-created: distrischool.class.created
+      class-updated: distrischool.class.updated
+      student-enrolled: distrischool.student.enrolled
+      attendance-recorded: distrischool.attendance.recorded
 
+  # Configurações de segurança OAuth2
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH0_ISSUER_URI:${AUTH0_DOMAIN:https://your-tenant.auth0.com/}}
+
+# Configurações Auth0
 auth0:
-  audience: ${AUTH0_AUDIENCE:https://distrischool.api}
+  audience: ${AUTH0_AUDIENCE:}
+  domain: ${AUTH0_DOMAIN:}
 
+# Configurações de segurança
 security:
   disable: ${SECURITY_DISABLE:false}
