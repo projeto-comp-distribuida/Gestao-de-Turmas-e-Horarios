@@ -30,6 +30,9 @@ public class ClassResponseDTO {
     private String schoolName;
     private Long shiftId;
     private String shiftName;
+    private Long subjectId;
+    private String subjectName;
+    private String subjectCode;
     private LocalDate startDate;
     private LocalDate endDate;
     private String room;
@@ -46,6 +49,9 @@ public class ClassResponseDTO {
     @Builder.Default
     private List<ScheduleSummaryDTO> schedules = new ArrayList<>();
     
+    @Builder.Default
+    private List<SubjectSummaryDTO> subjects = new ArrayList<>();
+    
     @Data
     @Builder
     @NoArgsConstructor
@@ -59,6 +65,16 @@ public class ClassResponseDTO {
         private String endTime;
         private String room;
         private Long teacherId;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SubjectSummaryDTO {
+        private Long id;
+        private String name;
+        private String code;
     }
 }
 

@@ -108,8 +108,11 @@ public class SecurityConfig {
         } else {
             http.authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/v1/health/**").permitAll()
+                    .requestMatchers("/api/v1/classes/health").permitAll()
                     .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                    // Permitir acesso ao endpoint GET /api/v1/classes/{id} para integração com outros serviços
+                    .requestMatchers("/api/v1/classes/{id}").permitAll()
                     .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

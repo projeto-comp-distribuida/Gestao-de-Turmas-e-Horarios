@@ -1,5 +1,6 @@
 package com.distrischool.schedule.service;
 
+import com.distrischool.schedule.dto.ScheduleResponseDTO;
 import com.distrischool.schedule.entity.Schedule;
 import com.distrischool.schedule.exception.ResourceNotFoundException;
 import com.distrischool.schedule.kafka.ScheduleEventProducer;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Serviço para gerenciar horários (schedules).
@@ -132,5 +134,62 @@ public class ScheduleService {
 
     public List<Schedule> findAll() {
         return scheduleRepository.findAll();
+    }
+
+    /**
+     * Busca um schedule por ID com relacionamentos carregados e retorna como DTO
+     */
+    public ScheduleResponseDTO findByIdAsDTO(Long id) {
+        Schedule schedule = scheduleRepository.findByIdWithRelations(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule", id));
+        return mapToDTO(schedule);
+    }
+
+    /**
+     * Busca todos os schedules com relacionamentos carregados e retorna como DTOs
+     */
+    public List<ScheduleResponseDTO> findAllAsDTO() {
+        List<Schedule> schedules = scheduleRepository.findAllWithRelations();
+        return schedules.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Mapeia uma entidade Schedule para ScheduleResponseDTO
+     */
+    public ScheduleResponseDTO mapToDTO(Schedule schedule) {
+        ScheduleResponseDTO.ScheduleResponseDTOBuilder builder = ScheduleResponseDTO.builder()
+                .id(schedule.getId())
+                .dayOfWeek(schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().toString() : null)
+                .startTime(schedule.getStartTime() != null ? schedule.getStartTime().toString() : null)
+                .endTime(schedule.getEndTime() != null ? schedule.getEndTime().toString() : null)
+                .room(schedule.getRoom())
+                .teacherId(schedule.getTeacherId())
+                .active(schedule.getActive())
+                .createdAt(schedule.getCreatedAt())
+                .updatedAt(schedule.getUpdatedAt());
+
+        // Mapear Class
+        if (schedule.getClassEntity() != null) {
+            builder.classId(schedule.getClassEntity().getId())
+                   .className(schedule.getClassEntity().getName())
+                   .classCode(schedule.getClassEntity().getCode());
+        }
+
+        // Mapear Subject
+        if (schedule.getSubject() != null) {
+            builder.subjectId(schedule.getSubject().getId())
+                   .subjectName(schedule.getSubject().getName())
+                   .subjectCode(schedule.getSubject().getCode());
+        }
+
+        // Mapear Shift
+        if (schedule.getShift() != null) {
+            builder.shiftId(schedule.getShift().getId())
+                   .shiftName(schedule.getShift().getName());
+        }
+
+        return builder.build();
     }
 }

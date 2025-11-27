@@ -11,6 +11,7 @@ import com.distrischool.schedule.repository.AttendanceRepository;
 import com.distrischool.schedule.repository.ClassStudentRepository;
 import com.distrischool.schedule.repository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,8 @@ public class AttendanceService {
         // Validar schedule
         Schedule schedule = scheduleRepository.findById(dto.getScheduleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule", dto.getScheduleId()));
+        Hibernate.initialize(schedule.getClassEntity());
+        Hibernate.initialize(schedule.getSubject());
 
         // Validar que os estudantes estão na turma
         Long classId = schedule.getClassEntity().getId();
@@ -102,6 +105,11 @@ public class AttendanceService {
 
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Presença", attendanceId));
+        Hibernate.initialize(attendance.getSchedule());
+        if (attendance.getSchedule() != null) {
+            Hibernate.initialize(attendance.getSchedule().getClassEntity());
+            Hibernate.initialize(attendance.getSchedule().getSubject());
+        }
 
         attendance.setPresent(present);
         attendance.setUpdatedBy(updatedBy);
@@ -125,7 +133,7 @@ public class AttendanceService {
     public List<Attendance> getAttendanceBySchedule(Long scheduleId, LocalDate date) {
         log.info("Buscando presença para schedule {} na data {}", scheduleId, date);
 
-        Schedule schedule = scheduleRepository.findById(scheduleId)
+        scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule", scheduleId));
 
         if (date != null) {

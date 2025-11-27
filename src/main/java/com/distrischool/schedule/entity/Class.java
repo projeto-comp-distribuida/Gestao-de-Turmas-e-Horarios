@@ -22,8 +22,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(callSuper = true, exclude = {"school", "shift", "schedules", "students", "teachers"})
-@ToString(callSuper = true, exclude = {"school", "shift", "schedules", "students", "teachers"})
+@EqualsAndHashCode(callSuper = true, exclude = {"school", "shift", "subject", "schedules", "students", "teachers"})
+@ToString(callSuper = true, exclude = {"school", "shift", "subject", "schedules", "students", "teachers"})
 public class Class extends BaseEntity {
 
     @Id
@@ -56,6 +56,10 @@ public class Class extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id")
     private Shift shift;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id")
+    private Subject subject;
 
     @Column(name = "start_date")
     private LocalDate startDate;

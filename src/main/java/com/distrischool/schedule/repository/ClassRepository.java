@@ -25,15 +25,23 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
     /**
      * Verifica conflitos de sala entre classes através de seus schedules
      * Duas classes não podem usar a mesma sala no mesmo horário
+     * Carrega relacionamentos para evitar LazyInitializationException
      */
     @Query("SELECT DISTINCT c FROM Class c " +
-           "JOIN c.schedules s " +
+           "LEFT JOIN FETCH c.school " +
+           "LEFT JOIN FETCH c.shift " +
+           "LEFT JOIN FETCH c.subject " +
+           "LEFT JOIN FETCH c.schedules s " +
+           "LEFT JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH c.students " +
+           "LEFT JOIN FETCH c.teachers " +
            "WHERE c.room = :room " +
-           "AND s.dayOfWeek = :dayOfWeek " +
-           "AND s.startTime < :endTime " +
-           "AND s.endTime > :startTime " +
+           "AND EXISTS (SELECT 1 FROM Schedule s2 WHERE s2.classEntity.id = c.id " +
+           "            AND s2.dayOfWeek = :dayOfWeek " +
+           "            AND s2.startTime < :endTime " +
+           "            AND s2.endTime > :startTime " +
+           "            AND s2.active = true) " +
            "AND c.active = true " +
-           "AND s.active = true " +
            "AND c.id != :excludeClassId")
     List<Class> findRoomConflicts(
         @Param("room") String room,
@@ -42,4 +50,42 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
         @Param("endTime") java.time.LocalTime endTime,
         @Param("excludeClassId") Long excludeClassId
     );
+    
+    /**
+     * Busca todas as classes com relacionamentos carregados (eager fetch)
+     * para evitar LazyInitializationException
+     * 
+     * Carrega as entidades ManyToOne (school, shift, subject) e as coleções
+     * (schedules, students, teachers). Usa DISTINCT para evitar duplicatas
+     * causadas por múltiplos JOINs com coleções.
+     * 
+     * IMPORTANTE: O subject é carregado explicitamente para garantir que
+     * sempre esteja disponível, mesmo quando há problemas com múltiplas coleções.
+     */
+    @Query("SELECT DISTINCT c FROM Class c " +
+           "LEFT JOIN FETCH c.school " +
+           "LEFT JOIN FETCH c.shift " +
+           "LEFT JOIN FETCH c.subject " +
+           "LEFT JOIN FETCH c.schedules s " +
+           "LEFT JOIN FETCH s.subject ss " +
+           "LEFT JOIN FETCH c.students " +
+           "LEFT JOIN FETCH c.teachers " +
+           "WHERE c.active = true AND c.deletedAt IS NULL " +
+           "ORDER BY c.id")
+    List<Class> findAllWithRelations();
+    
+    /**
+     * Busca uma classe por ID com relacionamentos carregados (eager fetch)
+     * para evitar LazyInitializationException
+     */
+    @Query("SELECT DISTINCT c FROM Class c " +
+           "LEFT JOIN FETCH c.school " +
+           "LEFT JOIN FETCH c.shift " +
+           "LEFT JOIN FETCH c.subject " +
+           "LEFT JOIN FETCH c.schedules s " +
+           "LEFT JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH c.students " +
+           "LEFT JOIN FETCH c.teachers " +
+           "WHERE c.id = :id AND c.active = true AND c.deletedAt IS NULL")
+    Optional<Class> findByIdWithRelations(@Param("id") Long id);
 }

@@ -63,7 +63,9 @@ public class SubjectService {
 
         Subject saved = subjectRepository.save(subject);
         log.info("Curso criado com sucesso: {}", saved.getId());
-        return saved;
+        // Recarregar com relacionamentos para evitar LazyInitializationException
+        return subjectRepository.findById(saved.getId())
+                .orElse(saved);
     }
 
     @Transactional
@@ -97,18 +99,23 @@ public class SubjectService {
 
         Subject saved = subjectRepository.save(existing);
         log.info("Curso atualizado com sucesso: {}", saved.getId());
-        return saved;
+        // Recarregar com relacionamentos para evitar LazyInitializationException
+        return subjectRepository.findById(saved.getId())
+                .orElse(saved);
     }
 
+    @Transactional(readOnly = true)
     public Subject findById(Long id) {
         return subjectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Curso", id));
     }
 
+    @Transactional(readOnly = true)
     public List<Subject> findAll() {
         return subjectRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public List<Subject> findByAcademicCenter(Long academicCenterId) {
         // Validar que o centro acadêmico existe
         academicCenterRepository.findById(academicCenterId)

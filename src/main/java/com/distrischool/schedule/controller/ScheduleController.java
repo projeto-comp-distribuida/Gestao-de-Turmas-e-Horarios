@@ -1,5 +1,6 @@
 package com.distrischool.schedule.controller;
 
+import com.distrischool.schedule.dto.ScheduleResponseDTO;
 import com.distrischool.schedule.entity.Schedule;
 import com.distrischool.schedule.service.ScheduleService;
 import com.distrischool.schedule.service.ScheduleConflictService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Controller REST para gerenciar horários (schedules).
@@ -29,7 +31,7 @@ public class ScheduleController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<Schedule>> create(@RequestBody Schedule schedule) {
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> create(@RequestBody Schedule schedule) {
         Schedule created = scheduleService.create(schedule);
         
         // Notificar via WebSocket
@@ -38,12 +40,14 @@ public class ScheduleController {
         updateMap.put("scheduleId", created.getId());
         websocketController.broadcastScheduleUpdate(updateMap);
         
-        return ResponseEntity.ok(ApiResponse.success(created, "Horário criado com sucesso"));
+        // Retornar como DTO para evitar LazyInitializationException
+        ScheduleResponseDTO dto = scheduleService.findByIdAsDTO(created.getId());
+        return ResponseEntity.ok(ApiResponse.success(dto, "Horário criado com sucesso"));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<Schedule>> update(@PathVariable Long id, @RequestBody Schedule schedule) {
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> update(@PathVariable Long id, @RequestBody Schedule schedule) {
         Schedule updated = scheduleService.update(id, schedule);
         
         // Notificar via WebSocket
@@ -52,7 +56,9 @@ public class ScheduleController {
         updateMap.put("scheduleId", updated.getId());
         websocketController.broadcastScheduleUpdate(updateMap);
         
-        return ResponseEntity.ok(ApiResponse.success(updated, "Horário atualizado com sucesso"));
+        // Retornar como DTO para evitar LazyInitializationException
+        ScheduleResponseDTO dto = scheduleService.findByIdAsDTO(updated.getId());
+        return ResponseEntity.ok(ApiResponse.success(dto, "Horário atualizado com sucesso"));
     }
 
     @DeleteMapping("/{id}")
@@ -70,21 +76,24 @@ public class ScheduleController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Schedule>> findById(@PathVariable Long id) {
-        Schedule schedule = scheduleService.findById(id);
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> findById(@PathVariable Long id) {
+        ScheduleResponseDTO schedule = scheduleService.findByIdAsDTO(id);
         return ResponseEntity.ok(ApiResponse.success(schedule, "Horário encontrado"));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Schedule>>> findAll() {
-        List<Schedule> schedules = scheduleService.findAll();
+    public ResponseEntity<ApiResponse<List<ScheduleResponseDTO>>> findAll() {
+        List<ScheduleResponseDTO> schedules = scheduleService.findAllAsDTO();
         return ResponseEntity.ok(ApiResponse.success(schedules, "Horários listados com sucesso"));
     }
 
     @PostMapping("/{id}/check-conflicts")
-    public ResponseEntity<ApiResponse<List<Schedule>>> checkConflicts(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<List<ScheduleResponseDTO>>> checkConflicts(@PathVariable Long id) {
         Schedule schedule = scheduleService.findById(id);
         List<Schedule> conflicts = conflictService.detectConflicts(schedule);
-        return ResponseEntity.ok(ApiResponse.success(conflicts, "Conflitos detectados"));
+        List<ScheduleResponseDTO> conflictDTOs = conflicts.stream()
+                .map(s -> scheduleService.mapToDTO(s))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success(conflictDTOs, "Conflitos detectados"));
     }
 }

@@ -32,6 +32,8 @@ public class ClassRequestDTO {
     
     private Long shiftId;
     
+    private Long subjectId;
+    
     private LocalDate startDate;
     
     private LocalDate endDate;

@@ -42,4 +42,25 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
                                       @Param("startTime") LocalTime startTime,
                                       @Param("endTime") LocalTime endTime,
                                       @Param("excludeId") Long excludeId);
+    
+    /**
+     * Busca um schedule por ID com relacionamentos carregados (eager fetch)
+     * para evitar LazyInitializationException
+     */
+    @Query("SELECT DISTINCT s FROM Schedule s " +
+           "LEFT JOIN FETCH s.classEntity " +
+           "LEFT JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH s.shift " +
+           "WHERE s.id = :id")
+    java.util.Optional<Schedule> findByIdWithRelations(@Param("id") Long id);
+    
+    /**
+     * Busca todos os schedules com relacionamentos carregados (eager fetch)
+     * para evitar LazyInitializationException
+     */
+    @Query("SELECT DISTINCT s FROM Schedule s " +
+           "LEFT JOIN FETCH s.classEntity " +
+           "LEFT JOIN FETCH s.subject " +
+           "LEFT JOIN FETCH s.shift")
+    List<Schedule> findAllWithRelations();
 }

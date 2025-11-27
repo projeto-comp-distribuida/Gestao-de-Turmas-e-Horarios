@@ -7,13 +7,19 @@ import com.distrischool.schedule.entity.Class;
 import com.distrischool.schedule.entity.ClassStudent;
 import com.distrischool.schedule.entity.ClassTeacher;
 import com.distrischool.schedule.entity.Schedule;
+import com.distrischool.schedule.entity.Subject;
 import com.distrischool.schedule.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +32,14 @@ public class ClassController {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClassController.class);
     private final ClassService classService;
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
+        Map<String, Object> status = Map.of(
+                "status", "UP",
+                "service", "classes");
+        return ResponseEntity.ok(ApiResponse.success(status, "Classes service healthy"));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
@@ -48,8 +62,9 @@ public class ClassController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        // Note: Soft delete should be implemented in the service
-        classService.findById(id); // Validate exists
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String deletedBy = authentication != null ? authentication.getName() : "system";
+        classService.delete(id, deletedBy);
         return ResponseEntity.ok(ApiResponse.success("Turma deletada com sucesso"));
     }
 
@@ -63,8 +78,14 @@ public class ClassController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<ClassResponseDTO>>> findAll() {
         List<Class> classes = classService.findAll();
+        log.debug("Total de turmas encontradas: {}", classes.size());
         List<ClassResponseDTO> responses = classes.stream()
-                .map(this::mapToResponseDTO)
+                .map(classEntity -> {
+                    log.debug("Mapeando turma ID: {}, Subject: {}", 
+                            classEntity.getId(), 
+                            classEntity.getSubject() != null ? classEntity.getSubject().getId() : "null");
+                    return mapToResponseDTO(classEntity);
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success(responses, "Turmas listadas com sucesso"));
     }
@@ -147,6 +168,12 @@ public class ClassController {
                    .shiftName(classEntity.getShift().getName());
         }
 
+        if (classEntity.getSubject() != null) {
+            builder.subjectId(classEntity.getSubject().getId())
+                   .subjectName(classEntity.getSubject().getName())
+                   .subjectCode(classEntity.getSubject().getCode());
+        }
+
         if (classEntity.getStartDate() != null) {
             builder.startDate(classEntity.getStartDate());
         }
@@ -172,6 +199,41 @@ public class ClassController {
                 .map(this::mapScheduleToDTO)
                 .collect(Collectors.toList());
         builder.schedules(schedules);
+
+        // Mapear subjects únicos da class (através dos schedules e do subject direto)
+        Map<Long, ClassResponseDTO.SubjectSummaryDTO> subjectsMap = new HashMap<>();
+        
+        // Adicionar subjects dos schedules
+        classEntity.getSchedules().stream()
+                .filter(schedule -> schedule.getSubject() != null)
+                .forEach(schedule -> {
+                    Subject subject = schedule.getSubject();
+                    subjectsMap.put(subject.getId(), ClassResponseDTO.SubjectSummaryDTO.builder()
+                            .id(subject.getId())
+                            .name(subject.getName())
+                            .code(subject.getCode())
+                            .build());
+                });
+        
+        // Adicionar subject direto da class (se existir e não estiver já no mapa)
+        if (classEntity.getSubject() != null) {
+            try {
+                Subject subject = classEntity.getSubject();
+                // Forçar inicialização do proxy lazy se necessário
+                if (subject.getId() != null) {
+                    subjectsMap.putIfAbsent(subject.getId(), ClassResponseDTO.SubjectSummaryDTO.builder()
+                            .id(subject.getId())
+                            .name(subject.getName())
+                            .code(subject.getCode())
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao acessar subject da turma {}: {}", classEntity.getId(), e.getMessage());
+            }
+        }
+        
+        List<ClassResponseDTO.SubjectSummaryDTO> subjects = new ArrayList<>(subjectsMap.values());
+        builder.subjects(subjects);
 
         return builder.build();
     }

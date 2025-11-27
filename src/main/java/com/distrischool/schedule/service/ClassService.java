@@ -8,6 +8,7 @@ import com.distrischool.schedule.entity.ClassTeacher;
 import com.distrischool.schedule.entity.Schedule;
 import com.distrischool.schedule.entity.School;
 import com.distrischool.schedule.entity.Shift;
+import com.distrischool.schedule.entity.Subject;
 import com.distrischool.schedule.exception.BusinessException;
 import com.distrischool.schedule.exception.ResourceNotFoundException;
 import com.distrischool.schedule.feign.StudentServiceClient;
@@ -19,6 +20,7 @@ import com.distrischool.schedule.repository.ClassTeacherRepository;
 import com.distrischool.schedule.repository.ScheduleRepository;
 import com.distrischool.schedule.repository.SchoolRepository;
 import com.distrischool.schedule.repository.ShiftRepository;
+import com.distrischool.schedule.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,12 +40,42 @@ public class ClassService {
     private final ClassRepository classRepository;
     private final SchoolRepository schoolRepository;
     private final ShiftRepository shiftRepository;
+    private final SubjectRepository subjectRepository;
     private final ClassStudentRepository classStudentRepository;
     private final ClassTeacherRepository classTeacherRepository;
     private final StudentServiceClient studentServiceClient;
     private final TeacherServiceClient teacherServiceClient;
     private final ScheduleRepository scheduleRepository;
     private final ClassEventProducer eventProducer;
+
+    @Transactional
+    public void delete(Long id, String deletedBy) {
+        log.info("Iniciando exclusão lógica da turma {}", id);
+
+        Class classEntity = classRepository.findByIdWithRelations(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turma", id));
+
+        if (Boolean.FALSE.equals(classEntity.getActive()) || classEntity.isDeleted()) {
+            log.warn("Turma {} já estava inativa/excluída. Nenhuma ação tomada.", id);
+            return;
+        }
+
+        String deletedByValue = deletedBy != null ? deletedBy : "schedule-service";
+
+        classEntity.setActive(false);
+        classEntity.markAsDeleted(deletedByValue);
+
+        if (classEntity.getSchedules() != null && !classEntity.getSchedules().isEmpty()) {
+            classEntity.getSchedules().forEach(schedule -> {
+                schedule.setActive(false);
+                schedule.markAsDeleted(deletedByValue);
+            });
+            scheduleRepository.saveAll(classEntity.getSchedules());
+        }
+
+        classRepository.save(classEntity);
+        log.info("Turma {} marcada como excluída por {}", id, deletedByValue);
+    }
 
     @Transactional
     public Class create(ClassRequestDTO dto) {
@@ -56,6 +88,13 @@ public class ClassService {
         Shift shift = null;
         if (dto.getShiftId() != null) {
             shift = getOrCreateShift(dto.getShiftId());
+        }
+
+        // Validar e obter subject se fornecido
+        Subject subject = null;
+        if (dto.getSubjectId() != null) {
+            subject = subjectRepository.findById(dto.getSubjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Disciplina", dto.getSubjectId()));
         }
 
         // Validar estudantes via Feign
@@ -77,6 +116,7 @@ public class ClassService {
                 .capacity(dto.getCapacity())
                 .school(school)
                 .shift(shift)
+                .subject(subject)
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
                 .room(dto.getRoom())
@@ -103,15 +143,19 @@ public class ClassService {
         // Publicar evento Kafka
         eventProducer.publishClassCreated(saved.getId(), saved.getSchool().getId(), saved.getName());
 
-        log.info("Turma criada com sucesso: {}", saved.getId());
-        return saved;
+        // Recarregar com relacionamentos para evitar LazyInitializationException
+        Class result = classRepository.findByIdWithRelations(saved.getId())
+                .orElse(saved);
+        
+        log.info("Turma criada com sucesso: {}", result.getId());
+        return result;
     }
 
     @Transactional
     public Class update(Long id, ClassRequestDTO dto) {
         log.info("Atualizando turma: {}", id);
 
-        Class existing = classRepository.findById(id)
+        Class existing = classRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma", id));
 
         // Obter a escola padrão (única escola do sistema)
@@ -121,6 +165,13 @@ public class ClassService {
         Shift shift = null;
         if (dto.getShiftId() != null) {
             shift = getOrCreateShift(dto.getShiftId());
+        }
+
+        // Validar e obter subject se fornecido
+        Subject subject = null;
+        if (dto.getSubjectId() != null) {
+            subject = subjectRepository.findById(dto.getSubjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Disciplina", dto.getSubjectId()));
         }
 
         // Validar estudantes via Feign
@@ -141,6 +192,7 @@ public class ClassService {
         existing.setCapacity(dto.getCapacity());
         existing.setSchool(school);
         existing.setShift(shift);
+        existing.setSubject(subject);
         existing.setStartDate(dto.getStartDate());
         existing.setEndDate(dto.getEndDate());
         existing.setRoom(dto.getRoom());
@@ -163,8 +215,12 @@ public class ClassService {
         // Publicar evento Kafka
         eventProducer.publishClassUpdated(saved.getId(), saved.getSchool().getId(), saved.getName());
 
-        log.info("Turma atualizada com sucesso: {}", saved.getId());
-        return saved;
+        // Recarregar com relacionamentos para evitar LazyInitializationException
+        Class result = classRepository.findByIdWithRelations(saved.getId())
+                .orElse(saved);
+        
+        log.info("Turma atualizada com sucesso: {}", result.getId());
+        return result;
     }
 
     @Transactional
@@ -281,17 +337,20 @@ public class ClassService {
         classTeacherRepository.delete(classTeacher);
     }
 
+    @Transactional(readOnly = true)
     public Class findById(Long id) {
-        return classRepository.findById(id)
+        return classRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma", id));
     }
 
+    @Transactional(readOnly = true)
     public List<Class> findAll() {
-        return classRepository.findAll();
+        return classRepository.findAllWithRelations();
     }
 
+    @Transactional(readOnly = true)
     public List<Class> findRoomConflicts(Long classId, String room) {
-        Class classEntity = classRepository.findById(classId)
+        Class classEntity = classRepository.findByIdWithRelations(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma", classId));
 
         if (room == null || room.isEmpty()) {
