@@ -8,3 +8,5 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS subject_id BIGINT REFERENCES subjec
 CREATE INDEX IF NOT EXISTS idx_class_subject ON classes(subject_id);
 
 
+
+
